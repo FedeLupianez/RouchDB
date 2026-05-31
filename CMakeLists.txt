@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 set(CMAKE_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic")
 
-file(GLOB SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*/*.c") 
+file(GLOB SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c") 
 
 add_executable(rouchdb ${SOURCES})
 
