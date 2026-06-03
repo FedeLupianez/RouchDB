@@ -1,9 +1,20 @@
+#pragma once
 #include "./errors.h"
 #include <stddef.h>
+#include <stdint.h>
+
+#define KB(n) (n << 10)
+#define MB(n) (n << 20)
+#define GB(n) (n << 30)
 
 typedef struct {
     RouchError error;
 } RowResult;
+
+typedef struct {
+    RouchError error;
+    uint32_t offset;
+} IO_RESULT;
 
 typedef enum {
     TYPE_INT = 0,

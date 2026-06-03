@@ -1,4 +1,4 @@
-
+#pragma once
 typedef enum {
     OK = 0,
     ERR_IO,

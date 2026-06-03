@@ -1,0 +1,21 @@
+[
+  {
+    "file": "/home/fede/work/rouch/src/main.c",
+    "arguments": [
+      "/usr/bin/cc",
+      "-I/home/fede/work/rouch/src",
+      "-std=gnu17",
+      "-MD",
+      "-MT",
+      "CMakeFiles/rouchdb.dir/src/main.c.o",
+      "-MF",
+      "CMakeFiles/rouchdb.dir/src/main.c.o.d",
+      "-o",
+      "CMakeFiles/rouchdb.dir/src/main.c.o",
+      "-c",
+      "/home/fede/work/rouch/src/main.c"
+    ],
+    "directory": "/home/fede/work/rouch/build",
+    "output": "CMakeFiles/rouchdb.dir/src/main.c.o"
+  }
+]
