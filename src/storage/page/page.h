@@ -69,8 +69,10 @@ void init_page(Page* page, uint32_t page_id, PageType type);
 
 IO_RESULT write_data(Page* page, uint8_t* data, uint32_t data_length);
 
+IO_RESULT read_data(char* data_dest, Page* page, uint32_t slot_id);
+
 Slot* get_slot(Page* page, uint16_t slot_id);
 
-Record* get_record(Page* page, uint16_t record_id);
+Record* get_record(Page* page, uint32_t offset);
 
 uint32_t checksum_page(Page* page);

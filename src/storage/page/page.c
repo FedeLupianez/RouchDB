@@ -2,6 +2,7 @@
 #include "common/errors.h"
 #include "common/types.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 void init_page(Page* page, uint32_t page_id, PageType type)
 {
@@ -35,13 +36,9 @@ Slot* get_new_slot(Page* page)
     return slot;
 }
 
-Record* get_record(Page* page, uint16_t slot_id)
+Record* get_record(Page* page, uint32_t offset)
 {
-    Slot* slot = get_slot(page, slot_id);
-    if (!slot || slot->deleted)
-        return NULL;
-    Record* record = (Record*)(page->data + slot->offset);
-    printf("New record returned\n");
+    Record* record = (Record*)(page->data + offset);
     return record;
 }
 
@@ -89,25 +86,33 @@ IO_RESULT write_in_page(Page* page, const uint8_t* data, uint32_t data_length)
     };
 }
 
-IO_RESULT page_read(Page* page, uint32_t offset, uint32_t lenght);
+IO_RESULT read_data(char* data_dest, Page* page, uint32_t slot_id)
+{
+    Slot* slot = get_slot(page, slot_id);
+    if (!slot) {
+        printf("Error with slot\n");
+        return (IO_RESULT) { ERR_IO };
+    }
+    if (!data_dest)
+        data_dest = malloc(slot->length);
+    Record* record = get_record(page, slot_id);
+    memcpy(data_dest, record->data, slot->length);
+    return (IO_RESULT) {
+        OK,
+        slot->offset
+    };
+}
 
 IO_RESULT write_data(Page* page, uint8_t* data, uint32_t data_length)
 {
-    uint16_t slot_id = page->header.slot_count;
     Slot* new_slot = get_new_slot(page);
     if (!new_slot) {
         printf("Error with slot\n");
         return (IO_RESULT) { ERR_IO };
     }
 
-    Record* new_record = get_record(page, slot_id);
-    if (!new_record) {
-        printf("Error with record\n");
-        return (IO_RESULT) { ERR_IO };
-    }
-
-    memcpy(new_record->data, data, data_length);
-    IO_RESULT result = write_in_page(page, new_record->data, data_length);
+    IO_RESULT result = write_in_page(page, data, data_length);
+    new_slot->length = data_length;
 
     if (result.error != OK) {
         printf("Error with write_in_page\n");

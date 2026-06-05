@@ -1,7 +1,5 @@
-
 #include "file.h"
 #include "common/types.h"
-#include "storage/page/page.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,7 +10,7 @@ RouchFile* empty_file(char* path, uint32_t pages)
     RouchFile* new_file = malloc(sizeof(RouchFile));
     if (!new_file)
         return NULL;
-    new_file->ptr = fopen(path, "wb");
+    new_file->ptr = fopen(path, "w+b");
     if (!new_file->ptr)
         return NULL;
     if (fseek(new_file->ptr, (long)(pages * PAGE_SIZE - 1), SEEK_SET) != 0) {
@@ -26,6 +24,13 @@ RouchFile* empty_file(char* path, uint32_t pages)
         return NULL;
     }
     fflush(new_file->ptr);
+    new_file->mapped = mmap(NULL, pages * PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fileno(new_file->ptr), 0);
+    if (new_file->mapped == MAP_FAILED) {
+        fclose(new_file->ptr);
+        free(new_file);
+        printf("error mapping file\n");
+        return NULL;
+    }
     return new_file;
 }
 
@@ -40,8 +45,20 @@ Page get_new_page(RouchFile* file, uint32_t page_id, PageType type)
     return page;
 }
 
-IO_RESULT write_in_file(RouchFile* file, Page* page, uint8_t* data, uint32_t data_length)
+Page* get_page(RouchFile* file, uint32_t page_id)
 {
+    if (!file || !file->mapped) {
+        return NULL;
+    }
+    if (page_id >= file->page_count) {
+        return NULL;
+    }
+    return (Page*)(file->mapped + (page_id * PAGE_SIZE));
+}
+
+IO_RESULT write_in_file(RouchFile* file, uint16_t page_id, uint8_t* data, uint32_t data_length)
+{
+    Page* page = get_page(file, page_id);
     IO_RESULT result = write_data(page, data, data_length);
     if (result.error != OK)
         return result;
@@ -61,10 +78,38 @@ IO_RESULT write_in_file(RouchFile* file, Page* page, uint8_t* data, uint32_t dat
     };
 }
 
+IO_RESULT read_from_file(RouchFile* file, char* data_dest, uint32_t page_id, uint32_t slot_id)
+{
+    if (!data_dest)
+        return (IO_RESULT) {
+            ERR_MEMORY
+        };
+    printf("entered in function\n");
+    Page* page = get_page(file, page_id);
+    if (!page)
+        return (IO_RESULT) {
+            ERR_NOT_FOUND
+        };
+    printf("page got: %u\n", page->header.page_id);
+    Slot* slot = get_slot(page, slot_id);
+    Record* record = get_record(page, slot->offset);
+    if (!record) {
+        printf("Error");
+        return (IO_RESULT) {
+            ERR_NOT_FOUND
+        };
+    }
+    memcpy(data_dest, record->data, slot->length);
+    return (IO_RESULT) {
+        OK
+    };
+}
+
 void RouchFileFree(RouchFile* file)
 {
     if (!file)
         return;
+    munmap(file->mapped, file->page_count * PAGE_SIZE);
     fclose(file->ptr);
     file->ptr = NULL;
     free(file);
