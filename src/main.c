@@ -7,6 +7,8 @@
 
 int main(int argc, char** argv)
 {
+    (void)argc;
+    (void)argv;
     RouchFile* file = empty_file("temp.dat", 3);
     Page new_page = get_new_page(file, 0, DATA);
     const int size = 5;

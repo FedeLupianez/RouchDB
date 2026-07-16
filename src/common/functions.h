@@ -7,7 +7,7 @@
 #define MB(n) (n << 20)
 #define GB(n) (n << 30)
 
-void logging(char* level, char* msg, ...)
+static inline void logging(char* level, char* msg, ...)
 {
     time_t now = time(NULL);
     fprintf(stderr, "%ld %s:", now, level);

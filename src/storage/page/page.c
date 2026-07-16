@@ -3,6 +3,7 @@
 #include "common/types.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void init_page(Page* page, uint32_t page_id, PageType type)
 {
@@ -16,7 +17,11 @@ void init_page(Page* page, uint32_t page_id, PageType type)
     page->header.free_start = 0;
     page->header.free_end = sizeof(page->data);
     page->header.free_space = sizeof(page->data);
-    page->checksum = checksum_page(page);
+    checksum_page(page, page->header.checksum);
+    printf("Checksum of page:");
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        printf("%02x", page->header.checksum[i]);
+    }
 }
 
 Slot* get_slot(Page* page, uint16_t slot_id)
@@ -42,15 +47,17 @@ Record* get_record(Page* page, uint32_t offset)
     return record;
 }
 
-uint32_t checksum_page(Page* page)
+void checksum_page(Page* page, unsigned char hash[SHA256_DIGEST_LENGTH])
 {
-    uint8_t* data = (uint8_t*)page->data;
-    uint16_t sum = 0;
+    SHA256((unsigned char*)page->data, page->header.free_space, hash);
 
-    for (int i = 0; i < (int)(PAGE_SIZE - sizeof(uint32_t)); i++)
-        sum += (sum * 31) ^ data[i];
+    // uint8_t* data = (uint8_t*)page->data;
+    // uint16_t sum = 0;
+    //
+    // for (int i = 0; i < (int)(PAGE_SIZE - sizeof(uint32_t)); i++)
+    //     sum += (sum * 31) ^ data[i];
 
-    return sum;
+    return;
 }
 
 IO_RESULT write_in_page(Page* page, const uint8_t* data, uint32_t data_length)
@@ -58,21 +65,21 @@ IO_RESULT write_in_page(Page* page, const uint8_t* data, uint32_t data_length)
     if (page->header.free_space <= 0) {
         printf("without free space\n");
         return (IO_RESULT) {
-            ERR_IO,
+            .error = ERR_IO,
         };
     }
 
     if (page->header.free_space < data_length) {
         printf("data is more then free space : %d | %d\n", page->header.free_space, data_length);
         return (IO_RESULT) {
-            ERR_IO,
+            .error = ERR_IO,
         };
     }
 
     if (page->header.free_start > page->header.free_end) {
         printf("Free space error with start and end\n");
         return (IO_RESULT) {
-            ERR_IO,
+            .error = ERR_IO,
         };
     }
 
@@ -80,6 +87,7 @@ IO_RESULT write_in_page(Page* page, const uint8_t* data, uint32_t data_length)
     memcpy(page->data + offset, data, data_length);
 
     page->header.free_start += data_length;
+    checksum_page(page, page->header.checksum);
     return (IO_RESULT) {
         OK,
         offset
@@ -91,7 +99,7 @@ IO_RESULT read_data(char* data_dest, Page* page, uint32_t slot_id)
     Slot* slot = get_slot(page, slot_id);
     if (!slot) {
         printf("Error with slot\n");
-        return (IO_RESULT) { ERR_IO };
+        return (IO_RESULT) { .error = ERR_IO };
     }
     if (!data_dest)
         data_dest = malloc(slot->length);
@@ -108,7 +116,7 @@ IO_RESULT write_data(Page* page, uint8_t* data, uint32_t data_length)
     Slot* new_slot = get_new_slot(page);
     if (!new_slot) {
         printf("Error with slot\n");
-        return (IO_RESULT) { ERR_IO };
+        return (IO_RESULT) { .error = ERR_IO };
     }
 
     IO_RESULT result = write_in_page(page, data, data_length);

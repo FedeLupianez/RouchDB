@@ -20,6 +20,7 @@
 #include "record.h"
 #include <common/functions.h>
 #include <common/types.h>
+#include <openssl/sha.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -49,8 +50,7 @@ typedef struct {
 
     uint16_t infimum;
     uint16_t supremum;
-
-    uint32_t checksum;
+    unsigned char checksum[SHA256_DIGEST_LENGTH];
 } PageHeader;
 
 typedef struct {
@@ -62,7 +62,6 @@ typedef struct {
 typedef struct {
     PageHeader header;
     char data[PAGE_SIZE - sizeof(PageHeader) - sizeof(uint32_t)];
-    uint32_t checksum;
 } Page;
 
 void init_page(Page* page, uint32_t page_id, PageType type);
@@ -75,4 +74,4 @@ Slot* get_slot(Page* page, uint16_t slot_id);
 
 Record* get_record(Page* page, uint32_t offset);
 
-uint32_t checksum_page(Page* page);
+void checksum_page(Page* page, unsigned char hash[SHA256_DIGEST_LENGTH]);

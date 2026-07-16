@@ -1,7 +1,11 @@
 #include "file.h"
+#include "common/functions.h"
 #include "common/types.h"
+#include "storage/page/page.h"
+#include <openssl/sha.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 RouchFile* empty_file(char* path, uint32_t pages)
 {
@@ -53,7 +57,27 @@ Page* get_page(RouchFile* file, uint32_t page_id)
     if (page_id >= file->page_count) {
         return NULL;
     }
-    return (Page*)(file->mapped + (page_id * PAGE_SIZE));
+    Page* page = (Page*)((uint8_t*)file->mapped + (page_id * PAGE_SIZE));
+    printf("Page got\n");
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    checksum_page(page, hash);
+    printf("Calculated checksum: ");
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        printf("%02x", hash[i]);
+    }
+    printf("\n");
+
+    printf("Checksum of page:    ");
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        printf("%02x", page->header.checksum[i]);
+    }
+    printf("\n");
+
+    if (memcmp(page->header.checksum, hash, SHA256_DIGEST_LENGTH) != 0) {
+        logging("ERRORIO", "Page corrupted");
+        return NULL;
+    }
+    return page;
 }
 
 IO_RESULT write_in_file(RouchFile* file, uint16_t page_id, uint8_t* data, uint32_t data_length)
@@ -68,7 +92,7 @@ IO_RESULT write_in_file(RouchFile* file, uint16_t page_id, uint8_t* data, uint32
     const int move_result = fseek(file->ptr, offset, SEEK_SET);
     if (move_result != 0)
         return (IO_RESULT) {
-            ERR_IO
+            .error = ERR_IO
         };
     fwrite(page, PAGE_SIZE, 1, file->ptr);
     fflush(file->ptr);
@@ -82,13 +106,13 @@ IO_RESULT read_from_file(RouchFile* file, char* data_dest, uint32_t page_id, uin
 {
     if (!data_dest)
         return (IO_RESULT) {
-            ERR_MEMORY
+            .error = ERR_MEMORY
         };
     printf("entered in function\n");
     Page* page = get_page(file, page_id);
     if (!page)
         return (IO_RESULT) {
-            ERR_NOT_FOUND
+            .error = ERR_NOT_FOUND
         };
     printf("page got: %u\n", page->header.page_id);
     Slot* slot = get_slot(page, slot_id);
@@ -96,12 +120,12 @@ IO_RESULT read_from_file(RouchFile* file, char* data_dest, uint32_t page_id, uin
     if (!record) {
         printf("Error");
         return (IO_RESULT) {
-            ERR_NOT_FOUND
+            .error = ERR_NOT_FOUND
         };
     }
     memcpy(data_dest, record->data, slot->length);
     return (IO_RESULT) {
-        OK
+        .error = OK
     };
 }
 
