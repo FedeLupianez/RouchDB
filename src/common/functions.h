@@ -19,17 +19,31 @@
 // \e[0;37m 	White
 // \e[0m 	    Reset
 
+static const struct {
+    const char* BLACK;
+    const char* RED;
+    const char* GREEN;
+    const char* YELLOW;
+    const char* BLUE;
+    const char* PURPLE;
+    const char* CYAN;
+    const char* WHITE;
+    const char* RESET;
+} ANSI = {
+    "\e[0;30m",
+    "\e[0;31m",
+    "\e[0;32m",
+    "\e[0;33m",
+    "\e[0;34m",
+    "\e[0;35m",
+    "\e[0;36m",
+    "\e[0;37m",
+    "\e[0m"
+
+};
+
 static inline void logging(char* level, char* msg, ...)
 {
-    const char* black = "\e[0;30m";
-    const char* red = "\e[0;31m";
-    const char* green = "\e[0;32m";
-    const char* yellow = "\e[0;33m";
-    const char* blue = "\e[0;34m";
-    const char* purple = "\e[0;35m";
-    const char* cyan = "\e[0;36m";
-    const char* white = "\e[0;37m";
-    const char* reset = "\e[0m";
 
     time_t now = time(NULL);
     struct tm* time_info = localtime(&now);
@@ -37,15 +51,15 @@ static inline void logging(char* level, char* msg, ...)
     char* color = malloc(8);
     // view color
     if (strcmp(level, "ERROR") == 0) {
-        color = (char*)red;
+        color = (char*)ANSI.RED;
     } else if (strcmp(level, "INFO") == 0) {
-        color = (char*)blue;
+        color = (char*)ANSI.BLUE;
     } else if (strcmp(level, "SETUP") == 0) {
-        color = (char*)green;
+        color = (char*)ANSI.GREEN;
     } else if (strcmp(level, "MEMORY") == 0) {
-        color = (char*)purple;
+        color = (char*)ANSI.PURPLE;
     } else if (strcmp(level, "NETWORK") == 0) {
-        color = (char*)cyan;
+        color = (char*)ANSI.CYAN;
     }
 
     fprintf(stderr, "%d:%d:%d %s[ %s ] ", time_info->tm_hour, time_info->tm_min, time_info->tm_sec, color, level);
@@ -53,5 +67,5 @@ static inline void logging(char* level, char* msg, ...)
     va_start(args, msg);
     vfprintf(stderr, msg, args);
     va_end(args);
-    fprintf(stderr, "%s\n", reset);
+    fprintf(stderr, "%s\n", ANSI.RESET);
 }

@@ -113,7 +113,7 @@ Token* lex_input(const char* input)
         if (actual_idx == tokens_size) {
             tokens_size += 2;
             Token* tmp = realloc(tokens, sizeof(Token) * tokens_size);
-            if (!tokens) {
+            if (!tmp) {
                 free(tokens);
                 return NULL;
             }
