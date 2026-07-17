@@ -17,7 +17,6 @@ int main(int argc, char** argv)
     IO_RESULT result = write_in_file(file, new_page.header.page_id, (uint8_t*)data, size);
     memset(&data, 'b', size);
     result = write_in_file(file, new_page.header.page_id, (uint8_t*)data, size);
-    printf("result error : %d \n", result.error);
 
     char* read_data = malloc(size);
     result = read_from_file(file, read_data, 0, 0);
@@ -25,6 +24,13 @@ int main(int argc, char** argv)
         printf("Error reading\n");
     else
         printf("Readed from file : %s\n", read_data);
+    //
+    // result = read_from_file(file, read_data, 0, 0);
+    // if (result.error != OK)
+    //     printf("Error reading\n");
+    // else
+    //     printf("Readed from file : %s\n", read_data);
+
     free(read_data);
 
     RouchFileFree(file);

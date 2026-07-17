@@ -1,4 +1,5 @@
 #include "file.h"
+#include "common/errors.h"
 #include "common/functions.h"
 #include "common/types.h"
 #include "storage/page/page.h"
@@ -6,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 
 RouchFile* empty_file(char* path, uint32_t pages)
 {
@@ -32,9 +34,10 @@ RouchFile* empty_file(char* path, uint32_t pages)
     if (new_file->mapped == MAP_FAILED) {
         fclose(new_file->ptr);
         free(new_file);
-        printf("error mapping file\n");
+        logging("ERROR", "Error mapping file");
         return NULL;
     }
+    madvise(new_file->mapped, pages * PAGE_SIZE, MADV_RANDOM);
     return new_file;
 }
 
@@ -58,7 +61,7 @@ Page* get_page(RouchFile* file, uint32_t page_id)
         return NULL;
     }
     Page* page = (Page*)((uint8_t*)file->mapped + (page_id * PAGE_SIZE));
-    printf("Page got\n");
+    logging("INFO", "Page %d got", page_id);
     unsigned char hash[SHA256_DIGEST_LENGTH];
     checksum_page(page, hash);
     printf("Calculated checksum: ");
@@ -74,7 +77,7 @@ Page* get_page(RouchFile* file, uint32_t page_id)
     printf("\n");
 
     if (memcmp(page->header.checksum, hash, SHA256_DIGEST_LENGTH) != 0) {
-        logging("ERRORIO", "Page corrupted");
+        logging("ERROR", "Page corrupted");
         return NULL;
     }
     return page;
@@ -84,22 +87,13 @@ IO_RESULT write_in_file(RouchFile* file, uint16_t page_id, uint8_t* data, uint32
 {
     Page* page = get_page(file, page_id);
     IO_RESULT result = write_data(page, data, data_length);
+    printf("page writed\n");
     if (result.error != OK)
         return result;
-    printf("page writed\n");
-
-    uint32_t offset = (page->header.page_id * PAGE_SIZE);
-    const int move_result = fseek(file->ptr, offset, SEEK_SET);
-    if (move_result != 0)
-        return (IO_RESULT) {
-            .error = ERR_IO
-        };
-    fwrite(page, PAGE_SIZE, 1, file->ptr);
-    fflush(file->ptr);
-    return (IO_RESULT) {
-        OK,
-        offset
-    };
+    // Sync page to file mapped by kernel
+    if (msync(page, PAGE_SIZE, MS_SYNC) != 0)
+        return (IO_RESULT) { .error = ERR_MEMORY };
+    return result;
 }
 
 IO_RESULT read_from_file(RouchFile* file, char* data_dest, uint32_t page_id, uint32_t slot_id)

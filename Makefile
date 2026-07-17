@@ -5,4 +5,4 @@ build:
 	cd build && cmake .. && make
 
 clean:
-	rm -rf build && rm temp.dat
+	rm -rf build temp.dat
