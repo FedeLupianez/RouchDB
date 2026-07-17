@@ -117,7 +117,7 @@ int main()
                     client_event.data.fd = client_fd;
 
                     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &client_event);
-                    logging("CONNECTION", "client connected");
+                    logging("NETWORK", "client connected at fd : %d", client_fd);
                 }
             } else if (events[i].events & EPOLLIN) {
                 char buffer[BUFFER_SIZE];
@@ -129,7 +129,7 @@ int main()
                     }
 
                     if (count == 0) {
-                        logging("CLOSE", "Client closed");
+                        logging("NETWORK", "Client %d closed", fd);
                         epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
                         close(fd);
                     }
