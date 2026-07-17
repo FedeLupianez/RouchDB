@@ -10,13 +10,13 @@ int main(int argc, char** argv)
     (void)argc;
     (void)argv;
     RouchFile* file = empty_file("temp.dat", 3);
-    Page new_page = get_new_page(file, 0, DATA);
+    Page* new_page = get_new_page(file, 0, DATA);
     const int size = 5;
     char data[size];
     memset(&data, 'a', size);
-    IO_RESULT result = write_in_file(file, new_page.header.page_id, (uint8_t*)data, size);
+    IO_RESULT result = write_in_file(file, new_page->header.page_id, (uint8_t*)data, size);
     memset(&data, 'b', size);
-    result = write_in_file(file, new_page.header.page_id, (uint8_t*)data, size);
+    result = write_in_file(file, new_page->header.page_id, (uint8_t*)data, size);
 
     char* read_data = malloc(size);
     result = read_from_file(file, read_data, 0, 0);

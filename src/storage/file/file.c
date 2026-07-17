@@ -4,10 +4,12 @@
 #include "common/types.h"
 #include "storage/page/page.h"
 #include <openssl/sha.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 RouchFile* empty_file(char* path, uint32_t pages)
 {
@@ -41,15 +43,28 @@ RouchFile* empty_file(char* path, uint32_t pages)
     return new_file;
 }
 
-Page get_new_page(RouchFile* file, uint32_t page_id, PageType type)
+Page* get_new_page(RouchFile* file, uint32_t page_id, PageType type)
 {
-    Page page;
-    init_page(&page, page_id, type);
-    fseek(file->ptr, file->page_count * PAGE_SIZE, SEEK_SET);
-    fwrite(&page, PAGE_SIZE, 1, file->ptr);
-    file->page_count++;
-    printf("Page created\n");
-    return page;
+    uint32_t new_page_count = file->page_count + 1;
+    uint32_t new_size = new_page_count * PAGE_SIZE;
+    if (ftruncate(fileno(file->ptr), new_size) != 0) {
+        logging("ERROR", "error resizing the file");
+        return NULL;
+    }
+    munmap(file->mapped, file->page_count * PAGE_SIZE);
+    file->mapped = mmap(NULL, new_size, PROT_READ | PROT_WRITE, MAP_SHARED, fileno(file->ptr), 0);
+
+    if (file->mapped == MAP_FAILED) {
+        logging("ERROR", "Error mapping file");
+        file->mapped = NULL;
+        return NULL;
+    }
+    file->page_count = new_page_count;
+    Page* new_page = (Page*)(file->mapped + (file->page_count - 1) * PAGE_SIZE);
+    init_page(new_page, page_id, type);
+    logging("INFO", "New page created");
+
+    return new_page;
 }
 
 Page* get_page(RouchFile* file, uint32_t page_id)

@@ -22,6 +22,7 @@ void init_page(Page* page, uint32_t page_id, PageType type)
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
         printf("%02x", page->header.checksum[i]);
     }
+    printf("\n");
 }
 
 Slot* get_slot(Page* page, uint16_t slot_id)
