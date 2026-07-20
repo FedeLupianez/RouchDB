@@ -20,14 +20,9 @@
 #define BUFFER_SIZE 1024
 
 typedef enum {
-    LOGIN,
-    INSERT,
-    SELECT,
-    DELETE,
-    UPDATE,
-    RESPONSE,
-    ERROR
-
+    CMD_LOGIN,
+    CMD_RESPONSE,
+    CMD_ERROR
 } Command;
 typedef struct {
     uint8_t size;
@@ -131,6 +126,7 @@ int main()
                         logging("NETWORK", "Client %d closed", fd);
                         epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
                         close(fd);
+                        break;
                     }
 
                     if (count < 0) {
@@ -160,7 +156,7 @@ int main()
                             logging("INFO", "Token %d : %s\n", count, token->value);
                             printf("Token type: %d | Token value : %s\n", token->type, token->value);
                             count++;
-                        } while (token->type != TOKEN_EOF);
+                        } while (token->type != TEOF);
                     }
 
                     // Response

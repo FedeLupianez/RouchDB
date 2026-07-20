@@ -1,6 +1,7 @@
 #pragma once
 #include "lexer.h"
 #include "common/functions.h"
+#include "sql/keywords.h"
 #include <common/types.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -17,16 +18,8 @@ Token read_word(const char* text, int pos)
     char* word = malloc(lenght + 1);
     memcpy(word, &text[start], lenght);
     word[lenght] = '\0';
-    TokenType type = TOKEN_IDENTIFIER;
-    if (strcmp(word, "SELECT") == 0) {
-        type = TOKEN_SELECT;
-    } else if (strcmp(word, "FROM") == 0) {
-        type = TOKEN_FROM;
-    } else if (strcmp(word, "WHERE") == 0) {
-        type = TOKEN_WHERE;
-    } else if (strcmp(word, "AND") == 0 || strcmp(word, "OR") == 0 || strcmp(word, "=") == 0) {
-        type = TOKEN_OPERATOR;
-    }
+    TokenType type = getType(word);
+
     return (Token) {
         .type = type,
         .value = word,
@@ -43,7 +36,7 @@ Token read_number(const char* text, int pos)
     int lenght = pos - start;
     char* number = strndup(&text[start], lenght);
     return (Token) {
-        .type = TOKEN_NUMBER,
+        .type = NUMBER,
         .value = number,
         .last_pos = pos
     };
@@ -62,21 +55,33 @@ Token get_next_token(Lexer* lexer)
     if (lexer->input[lexer->pos] == '=') {
         lexer->pos++;
         return (Token) {
-            .type = TOKEN_OPERATOR,
+            .type = OPERATOR,
             .value = NULL,
             .last_pos = lexer->pos
         };
     }
 
-    if (lexer->input[lexer->pos] == ';' || lexer->input[lexer->pos] == '\0')
+    if (lexer->input[lexer->pos] == ';' || lexer->input[lexer->pos] == '\0') {
+        lexer->pos++;
         return (Token) {
-            .type = TOKEN_EOF,
+            .type = TEOF,
             .value = ";",
             .last_pos = lexer->pos
         };
+    }
+
+    if (lexer->input[lexer->pos] == '*') {
+        lexer->pos++;
+        return (Token) {
+            .type = IDENTIFIER,
+            .value = "*",
+            .last_pos = lexer->pos
+        };
+    }
+
     lexer->pos++;
     return (Token) {
-        .type = TOKEN_UNKNOWN,
+        .type = UNKNOWN,
         .last_pos = lexer->pos
     };
 }
@@ -104,6 +109,6 @@ Token* lex_input(const char* input)
         tokens[actual_idx++] = actual_token;
         lexer.pos = actual_token.last_pos;
         logging("INFO", "Token : %s\n", actual_token.value);
-    } while (actual_token.type != TOKEN_EOF);
+    } while (actual_token.type != TEOF);
     return tokens;
 };

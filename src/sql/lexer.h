@@ -1,15 +1,21 @@
 #pragma once
+#include "common/uthash.h"
+#include <string.h>
 
 typedef enum {
-    TOKEN_SELECT,
-    TOKEN_FROM,
-    TOKEN_WHERE,
-    TOKEN_IDENTIFIER,
-    TOKEN_NUMBER,
-    TOKEN_STRING,
-    TOKEN_OPERATOR,
-    TOKEN_UNKNOWN,
-    TOKEN_EOF
+    SELECT,
+    FROM,
+    WHERE,
+    IDENTIFIER,
+    NUMBER,
+    STRING,
+    OPERATOR,
+    CREATE,
+    TABLE,
+    INSERT,
+    VALUES,
+    UNKNOWN,
+    TEOF
 } TokenType;
 
 typedef struct {
