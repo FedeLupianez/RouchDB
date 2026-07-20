@@ -1,31 +1,10 @@
 #pragma once
+#include "lexer.h"
+#include "common/functions.h"
 #include <common/types.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef enum {
-    TOKEN_SELECT,
-    TOKEN_FROM,
-    TOKEN_WHERE,
-    TOKEN_IDENTIFIER,
-    TOKEN_NUMBER,
-    TOKEN_STRING,
-    TOKEN_OPERATOR,
-    TOKEN_UNKNOWN,
-    TOKEN_EOF
-} TokenType;
-
-typedef struct {
-    TokenType type;
-    char* value;
-    int last_pos;
-} Token;
-
-typedef struct {
-    const char* input;
-    int pos;
-} Lexer;
 
 Token read_word(const char* text, int pos)
 {
@@ -38,15 +17,18 @@ Token read_word(const char* text, int pos)
     char* word = malloc(lenght + 1);
     memcpy(word, &text[start], lenght);
     word[lenght] = '\0';
+    TokenType type = TOKEN_IDENTIFIER;
     if (strcmp(word, "SELECT") == 0) {
-        return (Token) {
-            .type = TOKEN_SELECT,
-            .value = word,
-            .last_pos = pos
-        };
+        type = TOKEN_SELECT;
+    } else if (strcmp(word, "FROM") == 0) {
+        type = TOKEN_FROM;
+    } else if (strcmp(word, "WHERE") == 0) {
+        type = TOKEN_WHERE;
+    } else if (strcmp(word, "AND") == 0 || strcmp(word, "OR") == 0 || strcmp(word, "=") == 0) {
+        type = TOKEN_OPERATOR;
     }
     return (Token) {
-        .type = TOKEN_IDENTIFIER,
+        .type = type,
         .value = word,
         .last_pos = pos
     };
@@ -119,10 +101,9 @@ Token* lex_input(const char* input)
             }
             tokens = tmp;
         }
-        tokens[actual_idx] = actual_token;
-        tokens[actual_idx++] = (Token) {
-            .type = TOKEN_EOF,
-        };
+        tokens[actual_idx++] = actual_token;
+        lexer.pos = actual_token.last_pos;
+        logging("INFO", "Token : %s\n", actual_token.value);
     } while (actual_token.type != TOKEN_EOF);
     return tokens;
 };

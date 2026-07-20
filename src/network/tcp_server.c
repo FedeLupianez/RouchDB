@@ -3,6 +3,7 @@
 #include <common/functions.h>
 
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -11,6 +12,8 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+
+#include "sql/lexer.h"
 
 #define PORT 9090
 #define MAX_EVENTS 64
@@ -124,10 +127,6 @@ int main()
                 while (1) {
                     int count = recv(fd, buffer, sizeof(buffer), 0);
 
-                    if (count > 0) {
-                        // process data
-                    }
-
                     if (count == 0) {
                         logging("NETWORK", "Client %d closed", fd);
                         epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
@@ -142,6 +141,29 @@ int main()
                         break;
                     }
 
+                    if (count > 0) {
+                        buffer[count] = '\0';
+                        while (count > 0 && (buffer[count - 1] == '\n' || buffer[count - 1] == '\r'))
+                            buffer[--count] = '\0';
+                        printf("%s\n", buffer);
+                        if (strcmp(buffer, "exit") == 0) {
+                            logging("NETWORK", "Client %d exited", fd);
+                            epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+                            close(fd);
+                            break;
+                        }
+                        Token* tokens = lex_input(buffer);
+                        int count = 0;
+                        Token* token;
+                        do {
+                            token = (tokens + count);
+                            logging("INFO", "Token %d : %s\n", count, token->value);
+                            printf("Token type: %d | Token value : %s\n", token->type, token->value);
+                            count++;
+                        } while (token->type != TOKEN_EOF);
+                    }
+
+                    // Response
                     send(fd, buffer, count, 0);
                 }
             }

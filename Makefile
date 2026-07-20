@@ -6,3 +6,11 @@ build:
 
 clean:
 	rm -rf build temp.dat
+
+rebuild:
+	echo "Rebuilding..."
+	$(MAKE) clean
+	$(MAKE) build
+	echo "Done"
+
+

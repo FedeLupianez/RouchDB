@@ -8,9 +8,10 @@ file(GLOB_RECURSE ALL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
 list(FILTER ALL_SOURCES EXCLUDE REGEX "tcp_server\\.c$")
 set(SOURCES ${ALL_SOURCES})
 
-set(SERVER_SOURCES
-    src/network/tcp_server.c
-)
+file(GLOB_RECURSE SERVER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
+list(FILTER SERVER_SOURCES EXCLUDE REGEX "tcp_server\\.c$")
+list(FILTER SERVER_SOURCES EXCLUDE REGEX "main\\.c$")
+list(APPEND SERVER_SOURCES src/network/tcp_server.c)
 
 add_executable(rouchdb ${SOURCES})
 
@@ -41,3 +42,4 @@ target_include_directories(rouch_server PRIVATE
 )
 
 target_link_libraries(rouchdb PRIVATE OpenSSL::Crypto)
+target_link_libraries(rouch_server PRIVATE OpenSSL::Crypto)
