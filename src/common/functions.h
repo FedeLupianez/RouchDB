@@ -42,6 +42,9 @@ static const struct {
 
 };
 
+/*
+ * Logs the message to console with style
+ * */
 static inline void logging(char* level, char* msg, ...)
 {
 

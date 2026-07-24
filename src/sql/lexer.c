@@ -18,7 +18,12 @@ Token read_word(const char* text, int pos)
     char* word = malloc(lenght + 1);
     memcpy(word, &text[start], lenght);
     word[lenght] = '\0';
-    TokenType type = getType(word);
+    char* upper = malloc(lenght + 1);
+    for (int i = 0; i < lenght; i++)
+        upper[i] = toupper((unsigned char)word[i]);
+    upper[lenght] = '\0';
+    TokenType type = getType(upper);
+    free(upper);
 
     return (Token) {
         .type = type,
@@ -47,22 +52,34 @@ Token get_next_token(Lexer* lexer)
     while (isspace(lexer->input[lexer->pos]))
         lexer->pos++;
 
-    if (isalpha(lexer->input[lexer->pos]))
-        return read_word(lexer->input, lexer->pos);
-    if (isdigit(lexer->input[lexer->pos]))
+    if (isalpha(lexer->input[lexer->pos])) {
+        Token next = read_word(lexer->input, lexer->pos);
+        if (lexer->last_type == FROM && next.type == IDENTIFIER) {
+            next.type = TABLE;
+            lexer->last_type = TABLE;
+        } else {
+            lexer->last_type = next.type;
+        }
+        return next;
+    }
+    if (isdigit(lexer->input[lexer->pos])) {
+        lexer->last_type = NUMBER;
         return read_number(lexer->input, lexer->pos);
+    }
 
     if (lexer->input[lexer->pos] == '=') {
         lexer->pos++;
+        lexer->last_type = OPERATOR;
         return (Token) {
             .type = OPERATOR,
-            .value = NULL,
+            .value = "=",
             .last_pos = lexer->pos
         };
     }
 
     if (lexer->input[lexer->pos] == ';' || lexer->input[lexer->pos] == '\0') {
         lexer->pos++;
+        lexer->last_type = TEOF;
         return (Token) {
             .type = TEOF,
             .value = ";",
@@ -72,6 +89,7 @@ Token get_next_token(Lexer* lexer)
 
     if (lexer->input[lexer->pos] == '*') {
         lexer->pos++;
+        lexer->last_type = IDENTIFIER;
         return (Token) {
             .type = IDENTIFIER,
             .value = "*",
@@ -80,6 +98,7 @@ Token get_next_token(Lexer* lexer)
     }
 
     lexer->pos++;
+    lexer->last_type = UNKNOWN;
     return (Token) {
         .type = UNKNOWN,
         .last_pos = lexer->pos
@@ -93,7 +112,7 @@ Token* lex_input(const char* input)
     int tokens_size = 2;
     if (!tokens)
         return NULL;
-    Lexer lexer = (Lexer) { input, 0 };
+    Lexer lexer = (Lexer) { .input = input, .pos = 0, .last_type = TEOF };
     Token actual_token;
     do {
         actual_token = get_next_token(&lexer);

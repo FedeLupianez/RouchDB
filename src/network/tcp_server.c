@@ -13,7 +13,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+#include "sql/keywords.h"
 #include "sql/lexer.h"
+#include "sql/parser.h"
 
 #define PORT 9090
 #define MAX_EVENTS 64
@@ -87,6 +89,7 @@ int main()
     event.data.fd = server_fd;
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event);
 
+    init_keywords();
     logging("SETUP", "Server Listening");
     struct epoll_event events[MAX_EVENTS];
 
@@ -149,14 +152,7 @@ int main()
                             break;
                         }
                         Token* tokens = lex_input(buffer);
-                        int count = 0;
-                        Token* token;
-                        do {
-                            token = (tokens + count);
-                            logging("INFO", "Token %d : %s\n", count, token->value);
-                            printf("Token type: %d | Token value : %s\n", token->type, token->value);
-                            count++;
-                        } while (token->type != TEOF);
+                        Query new_query = parse_tokens(tokens);
                     }
 
                     // Response

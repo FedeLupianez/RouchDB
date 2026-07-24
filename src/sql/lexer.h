@@ -1,6 +1,4 @@
 #pragma once
-#include "common/uthash.h"
-#include <string.h>
 
 typedef enum {
     SELECT,
@@ -27,6 +25,7 @@ typedef struct {
 typedef struct {
     const char* input;
     int pos;
+    TokenType last_type;
 } Lexer;
 
 Token* lex_input(const char* input);

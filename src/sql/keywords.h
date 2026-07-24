@@ -1,4 +1,5 @@
 #pragma once
+#include "common/uthash.h"
 #include "sql/lexer.h"
 
 typedef struct {

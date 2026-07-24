@@ -6,6 +6,7 @@
 #define KB(n) (n << 10)
 #define MB(n) (n << 20)
 #define GB(n) (n << 30)
+#define STR_LENGHT 32
 
 typedef struct {
     RouchError error;
@@ -34,14 +35,7 @@ typedef struct {
 } SecureType;
 
 typedef struct {
-    char column[50];
-    char op;
+    char column[STR_LENGHT];
+    char* op;
     SecureType value;
 } Conditional;
-
-typedef struct {
-    char type;
-    char columns[10][50];
-    char table[50];
-    Conditional condition;
-} Query;

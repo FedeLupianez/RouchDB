@@ -1,15 +1,26 @@
 #include "keywords.h"
 #include "sql/lexer.h"
+#include <ctype.h>
+#include <string.h>
 
 Keyword* keywords = NULL;
 void add_keyword(char* keyword, TokenType type)
 {
     Keyword* k = malloc(sizeof(Keyword));
-    strcpy(k->keyword, keyword);
+    int klen = strlen(keyword);
+    char* upperk = malloc(klen + 1);
+    for (int i = 0; i < klen; i++)
+        upperk[i] = toupper((unsigned char)keyword[i]); // make keyword always upper
+    upperk[klen] = '\0';
+    strcpy(k->keyword, upperk);
+    free(upperk);
     k->type = type;
     HASH_ADD_STR(keywords, keyword, k);
 }
 
+/*
+ * Init all keywords of database
+ * */
 void init_keywords()
 {
     add_keyword("SELECT", SELECT);
@@ -33,5 +44,5 @@ TokenType getType(char* keyword)
     HASH_FIND_STR(keywords, keyword, k);
     if (k)
         return k->type;
-    return UNKNOWN;
+    return IDENTIFIER;
 }
