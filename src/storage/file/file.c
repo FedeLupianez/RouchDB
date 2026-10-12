@@ -16,9 +16,13 @@ RouchFile* empty_file(char* path, uint32_t pages)
     if (!path)
         return NULL;
     RouchFile* new_file = malloc(sizeof(RouchFile));
+    RouchFileHeader* header = malloc(sizeof(RouchFileHeader));
     if (!new_file)
         return NULL;
     new_file->ptr = fopen(path, "w+b");
+    header->page_size = PAGE_SIZE;
+    header->total_pages = pages;
+    header->size = header->total_pages * header->page_size;
     if (!new_file->ptr)
         return NULL;
     if (fseek(new_file->ptr, (long)(pages * PAGE_SIZE - 1), SEEK_SET) != 0) {
@@ -40,7 +44,35 @@ RouchFile* empty_file(char* path, uint32_t pages)
         return NULL;
     }
     madvise(new_file->mapped, pages * PAGE_SIZE, MADV_RANDOM);
+    new_file->page_count = pages;
+    for (uint32_t i = 0; i < pages; i++) {
+        Page* page = (Page*)((uint8_t*)new_file->mapped + i * PAGE_SIZE);
+        init_page(page, i, DATA);
+    }
+    msync(new_file->mapped, pages * PAGE_SIZE, MS_SYNC);
     return new_file;
+}
+
+RouchFile* open_file(char* path)
+{
+    if (!path)
+        return NULL;
+    RouchFile* file = malloc(sizeof(RouchFile));
+    if (!file)
+        return NULL;
+    file->ptr = fopen(path, "w+b");
+    if (!file->ptr)
+        return NULL;
+    if (fputc(0, file->ptr) == EOF) {
+        fclose(file->ptr);
+        free(file);
+        return NULL;
+    }
+    fflush(file->ptr);
+    file->mapped = mmap(NULL, file->header->total_pages * file->header->page_size, PROT_READ | PROT_WRITE, MAP_SHARED, fileno(file->ptr), 0);
+    if (!file->mapped)
+        return NULL;
+    return file;
 }
 
 Page* get_new_page(RouchFile* file, uint32_t page_id, PageType type)
@@ -105,6 +137,7 @@ IO_RESULT write_in_file(RouchFile* file, uint16_t page_id, uint8_t* data, uint32
     printf("page writed\n");
     if (result.error != OK)
         return result;
+    result.slot = page->header.slot_count;
     // Sync page to file mapped by kernel
     if (msync(page, PAGE_SIZE, MS_SYNC) != 0)
         return (IO_RESULT) { .error = ERR_MEMORY };
@@ -144,6 +177,7 @@ void RouchFileFree(RouchFile* file)
         return;
     munmap(file->mapped, file->page_count * PAGE_SIZE);
     fclose(file->ptr);
+    free(file->header);
     file->ptr = NULL;
     free(file);
     file = NULL;

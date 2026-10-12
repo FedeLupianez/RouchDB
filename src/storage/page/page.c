@@ -90,8 +90,8 @@ IO_RESULT write_in_page(Page* page, const uint8_t* data, uint32_t data_length)
     page->header.free_start += data_length;
     checksum_page(page, page->header.checksum);
     return (IO_RESULT) {
-        OK,
-        offset
+        .error = OK,
+        .offset = offset
     };
 }
 
@@ -107,8 +107,8 @@ IO_RESULT read_data(char* data_dest, Page* page, uint32_t slot_id)
     Record* record = get_record(page, slot_id);
     memcpy(data_dest, record->data, slot->length);
     return (IO_RESULT) {
-        OK,
-        slot->offset
+        .error = OK,
+        .offset = slot->offset
     };
 }
 
@@ -130,6 +130,6 @@ IO_RESULT write_data(Page* page, uint8_t* data, uint32_t data_length)
 
     return (IO_RESULT) {
         .error = OK,
-        .offset = result.offset
+        .offset = result.offset,
     };
 }

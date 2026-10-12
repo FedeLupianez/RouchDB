@@ -15,6 +15,7 @@ typedef struct {
 typedef struct {
     RouchError error;
     uint32_t offset;
+    uint32_t slot;
 } IO_RESULT;
 
 typedef enum {

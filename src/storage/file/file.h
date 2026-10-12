@@ -6,12 +6,20 @@
 #include <sys/mman.h>
 
 typedef struct {
+    uint32_t total_pages;
+    uint32_t page_size;
+    uint32_t size;
+} RouchFileHeader;
+
+typedef struct {
     uint32_t page_count;
     FILE* ptr;
     void* mapped;
+    RouchFileHeader* header;
 } RouchFile;
 
 RouchFile* empty_file(char* path, uint32_t pages);
+RouchFile* open_file(char* path);
 Page* get_new_page(RouchFile* file, uint32_t page_id, PageType type);
 Page* get_page(RouchFile* file, uint32_t page_id);
 IO_RESULT write_in_file(RouchFile* file, uint16_t page_id, uint8_t* data, uint32_t data_length);

@@ -1,10 +1,13 @@
 #pragma once
 
 #include "common/types.h"
+#include "storage/file/file.h"
+
+#define HEADER_PAGE_ID
 
 enum ColConfig {
     NULLABLE = 1,
-    INDEX = 1 << 1,
+    IDX = 1 << 1,
     PK = 1 << 2,
     UNIQUE = 1 << 3,
 };
@@ -17,7 +20,15 @@ typedef struct {
 
 typedef struct {
     char name[STR_LENGHT];
-    int size;
-    int col_count;
     Column* columns;
+    uint32_t size;
+    uint32_t col_count;
+    uint32_t registers_slot;
 } Table;
+
+typedef struct {
+    uint32_t row_id;
+    SecureType* values;
+} Row;
+
+void create_space(Table* table);
