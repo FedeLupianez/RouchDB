@@ -27,7 +27,8 @@ void init_keywords()
     add_keyword("FROM", FROM);
     add_keyword("WHERE", WHERE);
     add_keyword("IDENTIFIER", IDENTIFIER);
-    add_keyword("NUMBER", NUMBER);
+    add_keyword("INT", NUMBER);
+    add_keyword("FLOAT", NUMBER);
     add_keyword("STRING", STRING);
     add_keyword("OPERATOR", OPERATOR);
     add_keyword("AND", OPERATOR);

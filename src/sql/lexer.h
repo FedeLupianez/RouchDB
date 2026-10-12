@@ -12,6 +12,9 @@ typedef enum {
     TABLE,
     INSERT,
     VALUES,
+    DELIMITER,
+    INIT_BRACKET,
+    END_BRACKET,
     UNKNOWN,
     TEOF
 } TokenType;

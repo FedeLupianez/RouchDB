@@ -72,3 +72,63 @@ static inline void logging(char* level, char* msg, ...)
     va_end(args);
     fprintf(stderr, "%s\n", ANSI.RESET);
 }
+
+/*
+ * Releases an array returned by split_string()
+ * */
+static inline void split_free(char** tokens)
+{
+    if (!tokens)
+        return;
+    for (size_t i = 0; tokens[i] != NULL; i++)
+        free(tokens[i]);
+    free(tokens);
+}
+
+/*
+ * Splits `str` on every occurrence of `delimiter`.
+ * Returns a NULL terminated array of heap allocated strings, the amount of
+ * parts is stored in `count` when it is not NULL.
+ * Release the result with split_free().
+ * */
+static inline char** split_string(const char* str, char delimiter, size_t* count)
+{
+    if (count != NULL)
+        *count = 0;
+
+    if (str == NULL)
+        return NULL;
+
+    size_t parts = 1;
+    for (const char* p = str; *p != '\0'; p++) {
+        if (*p == delimiter)
+            parts++;
+    }
+
+    char** tokens = calloc(parts + 1, sizeof(char*));
+    if (tokens == NULL)
+        return NULL;
+
+    size_t index = 0;
+    const char* start = str;
+    for (const char* p = str;; p++) {
+        if (*p != delimiter && *p != '\0')
+            continue;
+
+        tokens[index] = strndup(start, (size_t)(p - start));
+        if (tokens[index] == NULL) {
+            split_free(tokens);
+            return NULL;
+        }
+        index++;
+        start = p + 1;
+
+        if (*p == '\0')
+            break;
+    }
+
+    if (count != NULL)
+        *count = index;
+
+    return tokens;
+}

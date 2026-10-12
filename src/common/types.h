@@ -8,6 +8,10 @@
 #define GB(n) (n << 30)
 #define STR_LENGHT 32
 
+#define MAX_COLUMNS 32
+
+typedef uint8_t bool;
+
 typedef struct {
     RouchError error;
 } RowResult;

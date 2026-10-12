@@ -11,11 +11,33 @@ typedef enum {
 } QueryType;
 
 typedef struct {
+    char name[STR_LENGHT];
+    TypeID type;
+    int length;
+    bool is_nullable;
+    bool is_primary_key;
+    bool is_unique;
+    bool is_auto_increment;
+} ColumnDefinition;
+
+typedef struct {
     int col_count;
-    QueryType type;
-    char columns[10][STR_LENGHT];
-    char table[STR_LENGHT];
+    ColumnDefinition columns[MAX_COLUMNS];
+} CreateTableQuery;
+
+typedef struct {
+    int col_count;
+    char columns[MAX_COLUMNS][STR_LENGHT];
     Conditional condition;
+} SelectQuery;
+
+typedef struct {
+    char table[STR_LENGHT];
+    QueryType type;
+    union {
+        CreateTableQuery create;
+        SelectQuery select;
+    } data;
 } Query;
 
 Query parse_tokens(Token* tokens);

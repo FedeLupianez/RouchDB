@@ -1,8 +1,9 @@
 
-#include "common/types.h"
+#include "sql/executor.h"
+#include "sql/keywords.h"
+#include "sql/lexer.h"
+#include "sql/parser.h"
 #include "storage/file/file.h"
-#include "storage/page/page.h"
-#include <stdio.h>
 #include <stdlib.h>
 
 int main(int argc, char** argv)
@@ -10,28 +11,11 @@ int main(int argc, char** argv)
     (void)argc;
     (void)argv;
     RouchFile* file = empty_file("database/test.db", 3);
-    Page* new_page = get_new_page(file, 0, DATA);
-    const int size = 5;
-    char data[size];
-    memset(&data, 'a', size);
-    IO_RESULT result = write_in_file(file, new_page->header.page_id, (uint8_t*)data, size);
-    memset(&data, 'b', size);
-    result = write_in_file(file, new_page->header.page_id, (uint8_t*)data, size);
+    init_keywords();
 
-    char* read_data = malloc(size);
-    result = read_from_file(file, read_data, 0, 0);
-    if (result.error != OK)
-        printf("Error reading\n");
-    else
-        printf("Readed from file : %s\n", read_data);
-    //
-    // result = read_from_file(file, read_data, 0, 0);
-    // if (result.error != OK)
-    //     printf("Error reading\n");
-    // else
-    //     printf("Readed from file : %s\n", read_data);
-
-    free(read_data);
+    Token* input = lex_input("CREATE TABLE test (name STRING, age INT);");
+    Query query = parse_tokens(input);
+    createQuery(query);
 
     RouchFileFree(file);
     return EXIT_SUCCESS;

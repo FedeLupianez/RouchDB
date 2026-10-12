@@ -77,6 +77,36 @@ Token get_next_token(Lexer* lexer)
         };
     }
 
+    if (lexer->input[lexer->pos] == ',') {
+        lexer->pos++;
+        lexer->last_type = DELIMITER;
+        return (Token) {
+            .type = DELIMITER,
+            .value = ",",
+            .last_pos = lexer->pos
+        };
+    }
+
+    if (lexer->input[lexer->pos] == '(') {
+        lexer->pos++;
+        lexer->last_type = INIT_BRACKET;
+        return (Token) {
+            .type = INIT_BRACKET,
+            .value = "(",
+            .last_pos = lexer->pos
+        };
+    }
+
+    if (lexer->input[lexer->pos] == ')') {
+        lexer->pos++;
+        lexer->last_type = END_BRACKET;
+        return (Token) {
+            .type = END_BRACKET,
+            .value = ")",
+            .last_pos = lexer->pos
+        };
+    }
+
     if (lexer->input[lexer->pos] == ';' || lexer->input[lexer->pos] == '\0') {
         lexer->pos++;
         lexer->last_type = TEOF;
@@ -127,7 +157,7 @@ Token* lex_input(const char* input)
         }
         tokens[actual_idx++] = actual_token;
         lexer.pos = actual_token.last_pos;
-        logging("INFO", "Token : %s\n", actual_token.value);
+        logging("INFO", "Token: %s | Type: %d \n", actual_token.value, actual_token.type);
     } while (actual_token.type != TEOF);
     return tokens;
 };

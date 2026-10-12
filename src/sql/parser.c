@@ -5,11 +5,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+
+static TypeID type_from_name(const char* name)
+{
+    if (strcasecmp(name, "INT") == 0) {
+        return TYPE_INT;
+    }
+    if (strcasecmp(name, "FLOAT") == 0) {
+        return TYPE_FLOAT;
+    }
+    return TYPE_STR;
+}
 
 Query parse_tokens(Token* tokens)
 {
     int count = 0;
     int is_where = 0;
+    int is_table = 0;
     Token* actual_token;
 
     Query query;
@@ -30,40 +43,67 @@ Query parse_tokens(Token* tokens)
         case (FROM):
             break;
         case (TABLE):
-            snprintf(query.table, STR_LENGHT, "%s", actual_token->value);
+            is_table = 1;
             break;
         case (IDENTIFIER):
             if (is_where) {
-                snprintf(query.condition.column, STR_LENGHT, "%s", actual_token->value);
+                snprintf(query.data.select.condition.column, STR_LENGHT, "%s", actual_token->value);
+            } else if (is_table) {
+                snprintf(query.table, STR_LENGHT, "%s", actual_token->value);
+                is_table = 0;
             } else {
-                snprintf(query.columns[query.col_count], STR_LENGHT, "%s", actual_token->value);
-                query.col_count++;
+                if (query.type == SELECT_Q) {
+                    SelectQuery* sq = &query.data.select;
+                    if (sq->col_count < MAX_COLUMNS) {
+                        snprintf(sq->columns[sq->col_count], STR_LENGHT, "%s", actual_token->value);
+                        sq->col_count++;
+                    }
+                } else if (query.type == CREATE_Q) {
+                    CreateTableQuery* ct = &query.data.create;
+                    if (ct->col_count < MAX_COLUMNS) {
+                        snprintf(ct->columns[ct->col_count].name, STR_LENGHT, "%s", actual_token->value);
+                        // El tipo llega en el siguiente token (STRING/NUMBER); no incrementar aún.
+                    }
+                }
             }
             break;
         case (WHERE):
             is_where = 1;
             break;
         case (OPERATOR):
-            if (!is_where || query.condition.op != NULL) {
+            if (!is_where || query.data.select.condition.op != NULL) {
                 break;
             };
-            query.condition.op = malloc(STR_LENGHT);
-            snprintf(query.condition.op, STR_LENGHT, "%s", actual_token->value);
+            query.data.select.condition.op = malloc(STR_LENGHT);
+            snprintf(query.data.select.condition.op, STR_LENGHT, "%s", actual_token->value);
             break;
         case (STRING):
-            query.condition.value.active = TYPE_STR;
-            snprintf(query.condition.value.value.s, STR_LENGHT, "%s", actual_token->value);
-            is_where = 0;
+            if (query.type == CREATE_Q && !is_where) {
+                CreateTableQuery* ct = &query.data.create;
+                if (ct->col_count < MAX_COLUMNS) {
+                    ct->columns[ct->col_count].type = type_from_name(actual_token->value);
+                    ct->col_count++;
+                }
+            } else {
+                query.data.select.condition.value.active = TYPE_STR;
+                snprintf(query.data.select.condition.value.value.s, STR_LENGHT, "%s", actual_token->value);
+                is_where = 0;
+            }
             break;
         case (NUMBER):
-            query.condition.value.active = TYPE_INT;
-            query.condition.value.value.i = 0;
-            is_where = 0;
+            if (query.type == CREATE_Q && !is_where) {
+                CreateTableQuery* ct = &query.data.create;
+                if (ct->col_count < MAX_COLUMNS) {
+                    ct->columns[ct->col_count].type = type_from_name(actual_token->value);
+                    ct->col_count++;
+                }
+            } else {
+                query.data.select.condition.value.active = TYPE_INT;
+                query.data.select.condition.value.value.i = 0;
+                is_where = 0;
+            }
             break;
         default:
-            if (actual_token->type == TEOF)
-                break;
-            logging("ERROR", "Error with token type %d", actual_token->type);
             break;
         };
 
@@ -71,12 +111,19 @@ Query parse_tokens(Token* tokens)
     } while (actual_token->type != TEOF);
     printf("QUERY TYPE : %d\n", query.type);
     printf("QUERY TABLE: %s\n", query.table);
-    printf("QUERY COLS:\n");
-    for (int i = 0; i < query.col_count; i++) {
-        printf("Col: %s\n", (char*)(query.columns + i));
+    if (query.type == SELECT_Q) {
+        printf("QUERY COLS:\n");
+        for (int i = 0; i < query.data.select.col_count; i++) {
+            printf("Col: %s\n", query.data.select.columns[i]);
+        }
+        if (query.data.select.condition.op)
+            printf("CONDITION: %s\n", query.data.select.condition.op);
+    } else if (query.type == CREATE_Q) {
+        printf("QUERY COLS:\n");
+        for (int i = 0; i < query.data.create.col_count; i++) {
+            printf("Col: %s Type: %d\n", query.data.create.columns[i].name, query.data.create.columns[i].type);
+        }
     }
-    if (query.condition.op)
-        printf("CONDITION: %s\n", query.condition.op);
 
     return query;
 }
