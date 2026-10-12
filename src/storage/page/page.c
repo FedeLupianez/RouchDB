@@ -18,7 +18,6 @@ void init_page(Page* page, uint32_t page_id, PageType type)
     page->header.free_end = sizeof(page->data);
     page->header.free_space = sizeof(page->data);
     checksum_page(page, page->header.checksum);
-    printf("Checksum of page:");
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
         printf("%02x", page->header.checksum[i]);
     }

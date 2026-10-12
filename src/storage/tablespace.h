@@ -2,6 +2,7 @@
 
 #include "common/types.h"
 #include "storage/file/file.h"
+#include <stdint.h>
 
 #define HEADER_PAGE_ID
 
@@ -20,10 +21,14 @@ typedef struct {
 
 typedef struct {
     char name[STR_LENGHT];
-    Column* columns;
     uint32_t size;
     uint32_t col_count;
     uint32_t registers_slot;
+} TableHeader;
+
+typedef struct {
+    TableHeader header;
+    Column* columns;
 } Table;
 
 typedef struct {

@@ -17,21 +17,30 @@ RouchFile* empty_file(char* path, uint32_t pages)
         return NULL;
     RouchFile* new_file = malloc(sizeof(RouchFile));
     RouchFileHeader* header = malloc(sizeof(RouchFileHeader));
-    if (!new_file)
+    if (!new_file || !header) {
+        free(new_file);
+        free(header);
         return NULL;
+    }
     new_file->ptr = fopen(path, "w+b");
     header->page_size = PAGE_SIZE;
     header->total_pages = pages;
     header->size = header->total_pages * header->page_size;
-    if (!new_file->ptr)
+    new_file->header = header;
+    if (!new_file->ptr) {
+        free(header);
+        free(new_file);
         return NULL;
+    }
     if (fseek(new_file->ptr, (long)(pages * PAGE_SIZE - 1), SEEK_SET) != 0) {
         fclose(new_file->ptr);
+        free(new_file->header);
         free(new_file);
         return NULL;
     }
     if (fputc(0, new_file->ptr) == EOF) {
         fclose(new_file->ptr);
+        free(new_file->header);
         free(new_file);
         return NULL;
     }
@@ -39,6 +48,7 @@ RouchFile* empty_file(char* path, uint32_t pages)
     new_file->mapped = mmap(NULL, pages * PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fileno(new_file->ptr), 0);
     if (new_file->mapped == MAP_FAILED) {
         fclose(new_file->ptr);
+        free(new_file->header);
         free(new_file);
         logging("ERROR", "Error mapping file");
         return NULL;
